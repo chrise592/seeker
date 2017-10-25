@@ -6,6 +6,7 @@
 #include "std_srvs/SetBool.h"
 #include <iostream>
 #include <string>
+#include <cmath>
 #include <cstdlib>
 
 class Seeker
@@ -23,6 +24,7 @@ private:
   ros::ServiceServer service_;
 
   bool enabled_;
+  bool found_;
 
 public:
   // ROS node initialization
@@ -38,9 +40,9 @@ public:
     service_ = nh_.advertiseService("/enable", &Seeker::enable, this);
     ROS_INFO("ready to enable");
 
-    ros::Rate loop_rate(10);
-
     enabled_ = false;
+
+    found_ = false;
   }
 
   bool enable(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res) {
@@ -60,37 +62,34 @@ public:
     return true;
   }
 
-  bool getEnabled() {
+  bool isEnabled() {
     return enabled_;
   }
 
-  void processLaserScan(const sensor_msgs::LaserScan::ConstPtr& scan) {
-    //scan->ranges[] are laser readings
-    //...
+  bool ballFound() {
+    return found_;
   }
 
-  // Scan for the ball here and returns if found
-  geometry_msgs::Vector3 seekBall() {
-    bool found = false;
-    geometry_msgs::Vector3 displacement;
-
-    while(!found) {
-
-      if (1) {
-        found = true;
+  void processLaserScan(const sensor_msgs::LaserScan::ConstPtr &scan) {
+    for (int i = 0; i < scan->ranges.size(); i++) {
+      if (!isnan(scan->ranges[i]) && isnan(scan->ranges.front()) && isnan(scan->ranges.back())) {
+        found_ = true;
+        ROS_INFO("ball found");
+        break;
+      }
+      else {
+        found_ = false;
       }
     }
-
-    return displacement;
   }
 
-  void move() {
+  void search() {
     geometry_msgs::Twist msg;
 
     geometry_msgs::Vector3 l;
     geometry_msgs::Vector3 a;
 
-    l.x = 2.0;
+    l.x = 0.0;
     l.y = 0.0;
     l.z = 0.0;
 
@@ -102,12 +101,6 @@ public:
     msg.angular = a;
 
     cmd_vel_pub_.publish(msg);
-  }
-  // Publish to the /mobile_base/commands/velocity topic here and ram the ball
-  // based on displacement
-  void ramBall(const geometry_msgs::Vector3& location) {
-
-    return;
   }
 };
 
@@ -124,13 +117,12 @@ int main(int argc, char **argv)
   ros::Rate loop_rate(10);
 
   while (ros::ok()) {
-    while (!turtlebot.getEnabled()) {
+    while (!turtlebot.isEnabled()) {
       ros::spinOnce();
     }
 
-    ROS_INFO("Turtlebot Activated");
-    while(turtlebot.getEnabled()) {
-      turtlebot.move();
+    while(turtlebot.isEnabled()) {
+      turtlebot.search();
       ros::spinOnce();
       loop_rate.sleep();  
     }    
