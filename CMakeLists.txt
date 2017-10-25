@@ -204,6 +204,6 @@ include_directories(
 ## Build seeker_node
 include_directories(include ${catkin_INCLUDE_DIRS})
 
-add_executable(seeker_node src/seeker_node.cpp)
+add_executable(seeker_node seeker_node.cpp)
 target_link_libraries(seeker_node ${catkin_LIBRARIES})
 add_dependencies(seeker_node seeker_generate_message_cpp)

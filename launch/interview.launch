@@ -1,6 +1,0 @@
-<launch>
-
-  <node pkg="seeker" name="turtlebot" type="seeker_node">
-  </node>
-
-</launch>

@@ -1,0 +1,6 @@
+<launch>
+
+  <node pkg="seeker" name="seeker_node" type="seeker_node">
+  </node>
+
+</launch>
