@@ -15,7 +15,7 @@ private:
   // The node handler we'll be using
   ros::NodeHandle nh_;
   // We will be publishing to the /mobile_base/commands/velocity topic to move the turtle
-  ros::Publisher cmd_vel_pub_;
+  ros::Publisher velocity_pub_;
   // We will be publishing to the /displacement topic to get the relative displacement
   ros::Publisher disp_pub_;
   // We will be subscribing to the /scan topic to get 2D cross-sectional scans
@@ -25,13 +25,14 @@ private:
 
   bool enabled_;
   bool found_;
+  float displacement_;
 
 public:
   // ROS node initialization
   Seeker(ros::NodeHandle &nh) {
     nh_ = nh;
     // set up the publisher for the /mobile_base/commands/velocity topic
-    cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/mobile_base/commands/velocity", 1);
+    velocity_pub_ = nh_.advertise<geometry_msgs::Twist>("/mobile_base/commands/velocity", 1);
     // set up the publisher for /displacement topic
     disp_pub_ = nh_.advertise<geometry_msgs::Vector3>("/displacement", 1000);
     // set up the subcriber for the /scan topic
@@ -43,6 +44,8 @@ public:
     enabled_ = false;
 
     found_ = false;
+
+    displacement_ = nanf("");
   }
 
   bool enable(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res) {
@@ -71,36 +74,46 @@ public:
   }
 
   void processLaserScan(const sensor_msgs::LaserScan::ConstPtr &scan) {
-    for (int i = 0; i < scan->ranges.size(); i++) {
-      if (!isnan(scan->ranges[i]) && isnan(scan->ranges.front()) && isnan(scan->ranges.back())) {
+    float min_distance = 10.0;
+    if (isnan(scan->ranges.front()) && isnan(scan->ranges.back())) {
+      if (!isnan(scan->ranges[270]) || !isnan(scan->ranges[360]) || !isnan(scan->ranges[430])) {
         found_ = true;
-        ROS_INFO("ball found");
-        break;
+        for (int i = 0; i < scan->ranges.size(); i++) {
+          if (scan->ranges[i] < min_distance) {
+            min_distance = scan->ranges[i];
+          }
+        }
+        displacement_ = min_distance;
       }
-      else {
-        found_ = false;
-      }
+    }
+    else {
+      found_ = false;
+      displacement_ = nanf("");
     }
   }
 
-  void search() {
+  void seek() {
     geometry_msgs::Twist msg;
 
-    geometry_msgs::Vector3 l;
-    geometry_msgs::Vector3 a;
+    msg.angular.z = 0.4;
 
-    l.x = 0.0;
-    l.y = 0.0;
-    l.z = 0.0;
+    velocity_pub_.publish(msg);
+  }
 
-    a.x = 0.0;
-    a.y = 0.0;
-    a.z = 0.8;
+  void drive() {
+    geometry_msgs::Twist msg;
 
-    msg.linear = l;
-    msg.angular = a;
+    msg.linear.x = 0.4;
 
-    cmd_vel_pub_.publish(msg);
+    velocity_pub_.publish(msg);
+  }
+
+  void publishDisp() {
+    geometry_msgs::Vector3 msg;
+
+    msg.x = displacement_;
+
+    disp_pub_.publish(msg);
   }
 };
 
@@ -111,7 +124,7 @@ int main(int argc, char **argv)
   ros::NodeHandle n;
   Seeker turtlebot(n);
 
-  ros::Rate loop_rate(10);
+  ros::Rate loop_rate(60);
 
   while (ros::ok()) {
     while (!turtlebot.isEnabled()) {
@@ -119,7 +132,13 @@ int main(int argc, char **argv)
     }
 
     while(turtlebot.isEnabled()) {
-      turtlebot.search();
+      turtlebot.publishDisp();
+      if (turtlebot.ballFound()) {
+        turtlebot.drive();
+      }
+      else {
+        turtlebot.seek();
+      }
       ros::spinOnce();
       loop_rate.sleep();  
     }    
