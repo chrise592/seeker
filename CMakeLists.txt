@@ -69,12 +69,12 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  geometry_msgs
-  sensor_msgs
-  std_msgs
-)
+#generate_messages(
+#  DEPENDENCIES
+#  geometry_msgs
+#  sensor_msgs
+#  std_msgs
+#)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -106,10 +106,10 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES seeker
+#  INCLUDE_DIRS include
+#  LIBRARIES seeker
   CATKIN_DEPENDS geometry_msgs roscpp sensor_msgs std_msgs std_srvs
-  DEPENDS system_lib
+#  DEPENDS system_lib
 )
 
 ###########
@@ -206,4 +206,3 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 
 add_executable(seeker_node seeker_node.cpp)
 target_link_libraries(seeker_node ${catkin_LIBRARIES})
-add_dependencies(seeker_node seeker_generate_message_cpp)
