@@ -34,5 +34,9 @@ Steps to run:
 
    Note: Displacement is only published after the turtlebot is enabled. Displacement is only shown in the x direction as relative distance to the ball. x is nan when the ball is not in range of the sensor or not found. y and z remain nan throughout.
 	
+Possible future additions:
 
+	Implement a feedback loop for intended direction and rotational velocity to make more precise movements and prevent overshooting directions. It is also possible to adjust angular velocity depeding on the position of the ball in the laser scan. (i.e. Rotate left if ball is off-center left, rotate right if ball is off-center right)
+
+	Stop the robot upon bumping into the ball.
 
